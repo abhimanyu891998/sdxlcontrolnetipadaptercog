@@ -18,6 +18,7 @@ from diffusers import (
     StableDiffusionXLControlNetPipeline,
     StableDiffusionXLControlNetInpaintPipeline,
     StableDiffusionXLControlNetImg2ImgPipeline,
+    AutoPipelineForText2Image
 )
 
 from diffusers.pipelines.stable_diffusion.safety_checker import (
@@ -125,6 +126,7 @@ class Predictor(BasePredictor):
             unet=self.txt2img_pipe.unet,
             scheduler=self.txt2img_pipe.scheduler,
         )
+
         self.img2img_pipe.to("cuda")
 
         print("Loading SDXL inpaint pipeline...")
@@ -228,6 +230,10 @@ class Predictor(BasePredictor):
         ),
         guidance_scale: float = Input(
             description="Scale for classifier-free guidance", ge=1, le=50, default=7.5
+        ),
+        ip_adapter_image: Path = Input(
+            description="Input image for IP adapter",
+            default=None,
         ),
         prompt_strength: float = Input(
             description="Prompt strength when using img2img / inpaint. 1.0 corresponds to full destruction of information in image",
@@ -522,7 +528,13 @@ class Predictor(BasePredictor):
             sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale}
 
         inference_start = time.time()
-        output = pipe(**common_args, **sdxl_kwargs, **controlnet_args)
+        scale = {
+            "up": {"block_0": [0.2, 0.3, 0.1]},
+        }
+        pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name="ip-adapter_sdxl.bin")
+        pipe.set_ip_adapter_scale(scale)
+        output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_adapter_image)
+
         print(f"inference took: {time.time() - inference_start:.2f}s")
 
         if refine == "base_image_refiner":
