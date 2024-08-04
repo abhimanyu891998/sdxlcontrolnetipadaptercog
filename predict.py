@@ -21,6 +21,8 @@ from diffusers import (
     AutoPipelineForText2Image
 )
 
+from diffusers.utils import load_image
+
 from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
 )
@@ -531,9 +533,11 @@ class Predictor(BasePredictor):
         scale = {
             "up": {"block_0": [0.2, 0.3, 0.1]},
         }
+
         pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name="ip-adapter_sdxl.bin")
         pipe.set_ip_adapter_scale(scale)
-        output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_adapter_image)
+        ip_img = load_image(ip_adapter_image)
+        output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_img)
 
         print(f"inference took: {time.time() - inference_start:.2f}s")
 
