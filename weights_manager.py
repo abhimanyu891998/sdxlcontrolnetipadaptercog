@@ -80,6 +80,8 @@ class WeightsManager:
                     #     rank=name_rank_map[name],
                     # )
                     module = AttnProcessor2_0()
+                    def create_lora_layer(dim, rank):
+                        return LoRALinearLayer(dim, dim, rank)
 
                     # Then, set the LoRA layers directly on the attention components
                     module.to_q.lora_layer = create_lora_layer(hidden_size, rank=name_rank_map[name])
@@ -92,8 +94,7 @@ class WeightsManager:
                         module.to_k_cross.lora_layer = create_lora_layer(cross_attention_dim, rank=name_rank_map[name])
                         module.to_v_cross.lora_layer = create_lora_layer(cross_attention_dim, rank=name_rank_map[name])
 
-                    def create_lora_layer(dim, rank):
-                        return LoRALinearLayer(dim, dim, rank)
+
                 unet_lora_attn_procs[name] = module.to("cuda", non_blocking=True)
 
             unet.set_attn_processor(unet_lora_attn_procs)
