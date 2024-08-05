@@ -1,6 +1,6 @@
 import json
 import os
-from diffusers.models.attention_processor import LoRAAttnProcessor2_0, AttnProcessor2_0
+from diffusers.models.attention_processor import LoRAAttnProcessor2_0, AttnProcessor2_0, LoRALinearLayer
 from safetensors.torch import load_file
 from dataset_and_utils import TokenEmbeddingsHandler
 from weights import WeightsDownloadCache
@@ -74,11 +74,26 @@ class WeightsManager:
                     block_id = int(name[len("down_blocks.")])
                     hidden_size = unet.config.block_out_channels[block_id]
                 with no_init_or_tensor():
-                    module = AttnProcessor2_0(
-                        hidden_size=hidden_size,
-                        cross_attention_dim=cross_attention_dim,
-                        rank=name_rank_map[name],
-                    )
+                    # module = LoRAAttnProcessor2_0(
+                    #     hidden_size=hidden_size,
+                    #     cross_attention_dim=cross_attention_dim,
+                    #     rank=name_rank_map[name],
+                    # )
+                    module = AttnProcessor2_0()
+
+                    # Then, set the LoRA layers directly on the attention components
+                    module.to_q.lora_layer = create_lora_layer(hidden_size, rank=name_rank_map[name])
+                    module.to_k.lora_layer = create_lora_layer(hidden_size, rank=name_rank_map[name])
+                    module.to_v.lora_layer = create_lora_layer(hidden_size, rank=name_rank_map[name])
+                    module.to_out[0].lora_layer = create_lora_layer(hidden_size, rank=name_rank_map[name])
+
+                    # If you're using cross-attention, you might also need to set:
+                    if cross_attention_dim is not None:
+                        module.to_k_cross.lora_layer = create_lora_layer(cross_attention_dim, rank=name_rank_map[name])
+                        module.to_v_cross.lora_layer = create_lora_layer(cross_attention_dim, rank=name_rank_map[name])
+
+                    def create_lora_layer(dim, rank):
+                        return LoRALinearLayer(dim, dim, rank)
                 unet_lora_attn_procs[name] = module.to("cuda", non_blocking=True)
 
             unet.set_attn_processor(unet_lora_attn_procs)
