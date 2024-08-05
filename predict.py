@@ -534,10 +534,13 @@ class Predictor(BasePredictor):
             "up": {"block_0": [0.2, 0.3, 0.1]},
         }
 
-        pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name="ip-adapter_sdxl.bin")
-        pipe.set_ip_adapter_scale(scale)
-        ip_img = load_image(str(ip_adapter_image))
-        output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_img)
+        if ip_adapter_image:
+            pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name="ip-adapter_sdxl.bin")
+            pipe.set_ip_adapter_scale(scale)
+            ip_img = load_image(str(ip_adapter_image))
+            output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_img)
+        else:
+            output = pipe(**common_args, **sdxl_kwargs, **controlnet_args)
 
         print(f"inference took: {time.time() - inference_start:.2f}s")
 
