@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from typing import List, Optional
@@ -236,6 +237,14 @@ class Predictor(BasePredictor):
         ip_adapter_image: Path = Input(
             description="Input image for IP adapter",
             default=None,
+        ),
+        scale_json: str = Input(
+            description="Scale for IP adapter",
+            default='{"up": {"block_0": [0.2, 0.3, 0.1]}}',
+        ),
+        ip_adapter_weight_name: str = Input(
+            description="IP adapter model name",
+            default="ip-adapter_sdxl.bin",
         ),
         prompt_strength: float = Input(
             description="Prompt strength when using img2img / inpaint. 1.0 corresponds to full destruction of information in image",
@@ -530,12 +539,15 @@ class Predictor(BasePredictor):
             sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale}
 
         inference_start = time.time()
-        scale = {
-            "up": {"block_0": [0.2, 0.3, 0.1]},
-        }
+        #if scale_json is a decimal in string format, convert it to a decimal and assign
+        if scale_json.isdigit():
+            scale = float(scale_json)
+        else:
+            #if scale_json is a json object, load it
+            scale = json.loads(scale_json)
 
         if ip_adapter_image:
-            pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name="ip-adapter_sdxl.bin")
+            pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name=ip_adapter_weight_name)
             pipe.set_ip_adapter_scale(scale)
             ip_img = load_image(str(ip_adapter_image))
             output = pipe(**common_args, **sdxl_kwargs, **controlnet_args, ip_adapter_image=ip_img)
