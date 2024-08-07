@@ -102,7 +102,7 @@ class WeightsManager:
             # unet.set_attn_processor(unet_lora_attn_procs)
             # unet.load_state_dict(tensors, strict=False)
             lora_state_dict = load_file(os.path.join(local_weights_cache, "lora.safetensors"))
-            pipe.load_lora_weights(lora_state_dict)
+            pipe.load_lora_into_unet(lora_state_dict)
 
             # Determine the rank from the loaded weights
             # rank = None
