@@ -5,6 +5,7 @@ from peft import get_peft_model, LoraConfig
 from safetensors.torch import load_file
 from dataset_and_utils import TokenEmbeddingsHandler
 from weights import WeightsDownloadCache
+from diffusers.loaders import LoraLoaderMixin
 
 
 class WeightsManager:
@@ -102,7 +103,10 @@ class WeightsManager:
             # unet.set_attn_processor(unet_lora_attn_procs)
             # unet.load_state_dict(tensors, strict=False)
             lora_state_dict = load_file(os.path.join(local_weights_cache, "lora.safetensors"))
-            pipe.load_lora_into_unet(lora_state_dict)
+            LoraLoaderMixin.load_lora_into_unet(
+                state_dict=lora_state_dict, unet=unet, network_alphas= {}
+            )
+            # pipe.load_lora_weights(lora_state_dict)
 
             # Determine the rank from the loaded weights
             # rank = None
