@@ -102,34 +102,35 @@ class WeightsManager:
             # unet.set_attn_processor(unet_lora_attn_procs)
             # unet.load_state_dict(tensors, strict=False)
             lora_state_dict = load_file(os.path.join(local_weights_cache, "lora.safetensors"))
+            pipe.load_lora_weights(lora_state_dict, adapter_name="unetlora")
 
             # Determine the rank from the loaded weights
-            rank = None
-            for key, value in lora_state_dict.items():
-                if key.endswith("up.weight"):
-                    rank = value.shape[1]
-                    break
-
-            if rank is None:
-                raise ValueError("Could not determine LoRA rank from weights")
-
-            # Define LoRA config
-            lora_config = LoraConfig(
-                r=rank,
-                lora_alpha=rank,
-                target_modules=["to_q", "to_k", "to_v", "to_out.0"],
-                lora_dropout=0.0,
-                bias="none",
-            )
-
-            # Apply LoRA to the model
-            unet = get_peft_model(unet, lora_config)
-
-            # Load the LoRA weights
-            unet.load_state_dict(lora_state_dict, strict=False)
-
-            # Set the UNet back to the pipeline
-            pipe.unet = unet
+            # rank = None
+            # for key, value in lora_state_dict.items():
+            #     if key.endswith("up.weight"):
+            #         rank = value.shape[1]
+            #         break
+            #
+            # if rank is None:
+            #     raise ValueError("Could not determine LoRA rank from weights")
+            #
+            # # Define LoRA config
+            # lora_config = LoraConfig(
+            #     r=rank,
+            #     lora_alpha=rank,
+            #     target_modules=["to_q", "to_k", "to_v", "to_out.0"],
+            #     lora_dropout=0.0,
+            #     bias="none",
+            # )
+            #
+            # # Apply LoRA to the model
+            # unet = get_peft_model(unet, lora_config)
+            #
+            # # Load the LoRA weights
+            # unet.load_state_dict(lora_state_dict, strict=False)
+            #
+            # # Set the UNet back to the pipeline
+            # pipe.unet = unet
 
         # load text
         handler = TokenEmbeddingsHandler(
